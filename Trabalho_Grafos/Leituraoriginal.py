@@ -140,7 +140,7 @@ def get_graph(filename):
 
 
 def main():
-    (graph, graph_settings) = get_graph("./data/problemas-grupo1/problema10.txt")
+    (graph, graph_settings) = get_graph("./data/problemas-grupo1/problema7.txt")
     pos = nx.get_node_attributes(graph, "pos")
     a = 0
     for i in range(int(graph_settings["DIMENSION"])):
