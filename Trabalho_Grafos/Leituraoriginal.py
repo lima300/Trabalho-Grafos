@@ -119,16 +119,6 @@ def get_graph(filename):
             else:
                 last_reader_pos = new_reader_pos
 
-    # tam = len(Are    # tam = len(Arestas)
-    # i = 0
-    # while(i < tam):
-    #     print(Arestas[i].edge, Arestas[i].distance)
-    #     i += 1stas)
-    # i = 0
-    # while(i < tam):
-    #     print(Arestas[i].edge, Arestas[i].distance)
-    #     i += 1
-
         current_line = data_file.readline()
         if current_line != "EOF":
             raise RuntimeError("Esperado \"EOF\", mas foi lido \"{}\"".format(current_line))
@@ -140,7 +130,7 @@ def get_graph(filename):
 
 
 def main():
-    (graph, graph_settings) = get_graph("./data/problemas-grupo1/problema7.txt")
+    (graph, graph_settings) = get_graph("./data/problemas-grupo1/problema1.txt")
     pos = nx.get_node_attributes(graph, "pos")
     a = 0
     for i in range(int(graph_settings["DIMENSION"])):

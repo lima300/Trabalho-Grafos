@@ -12,6 +12,7 @@ class Node:
          self.idNode = Id
          self.visit = False
          self.region = -1
+         self.demand = -1
 
     def getCoordX(self):
          return self.coordX
@@ -31,6 +32,9 @@ class Node:
     def setRegion(self, r):
         self.region = r
 
+    def setDemand(self, d):
+        self.demand = d
+
 class Edge:
     def __init__(self, V1, V2, d):
          self.edge = (V1, V2)
@@ -42,33 +46,10 @@ class Edge:
     def getEdge(self):
          return self.edge
 
-class Set:
-    def __init__(self, Id, d):
-        self.lixt = []
-        self.idSet = Id
-        self.demand = d
-        self.visit = False
-
-    def getLixt(self):
-        return self.lixt
-
-    def getidSet(self):
-        return self.idSet
-
-    def getDemand(self):
-        return self.demand
-
-    def getVisit(self):
-        return self.visit
-
-    def setVisit(self, b):
-        self.visit = b
-
 class Vehicle:
     def __init__(self, c, Id):
         self.capacity = c
         self.Id = Id
-        self.roteRegion = []
         self.roteNodes = []
         self.totalDistance = 0
 
@@ -82,7 +63,7 @@ class Vehicle:
         return self.capacity
         
 def calculaDistancia(x1, y1, x2, y2):
-    return math.sqrt(((x2-x1)**2)+((y2-y1)**2))
+    return float(math.sqrt(((x2-x1)**2)+((y2-y1)**2)))
 
 # importa grafo do arquivo filename, a vértice 1 é a garagem dos veículos
 def get_graph(filename):
@@ -148,23 +129,10 @@ def get_graph(filename):
             (current_set, nodes_in_set) = current_line.split(" ", 1)
             nodes_in_set = nodes_in_set.split(" ")
 
-            aux = []
-
             for each_node in nodes_in_set:
                 for i in Nodes:
                     if i.idNode == int(each_node):
                         i.region = current_set
-                if int(each_node) != -1:
-                    aux.append(int(each_node))
-
-            sett = Set(current_set, 0)
-            tam = len(aux)
-            i = 0
-            while(i < tam):
-                sett.lixt.append(aux[i])
-                i += 1
-            
-            Sets.append(sett)
 
             new_reader_pos = data_file.tell()
             # checa se o cursor se moveu para tratar EOF prematuro
@@ -177,6 +145,8 @@ def get_graph(filename):
 
         # leitura das demandas
 
+        graph_settings["DEMAND_TOTAL"] = int(0)
+
         current_line = data_file.readline()
         last_reader_pos = data_file.tell()
     
@@ -186,9 +156,11 @@ def get_graph(filename):
         for i in range(int(graph_settings["SETS"])):
             current_line = data_file.readline()
             (current_set, current_demand) = (current_line.rstrip("\n")).split(" ", 1)
+            graph_settings["DEMAND_TOTAL"] += int(current_demand)
 
-            Sets[i].demand = int(current_demand)
-
+            for i in Nodes:
+                if(int(current_set) == int(i.region)):
+                    i.demand = int(current_demand)
 
             new_reader_pos = data_file.tell()
 
@@ -203,11 +175,6 @@ def get_graph(filename):
         current_line = data_file.readline()
         if current_line != "EOF":
             raise RuntimeError("Esperado \"EOF\", mas foi lido \"{}\"".format(current_line))
-    
-        a = 0
-        for i in range(int(graph_settings["DIMENSION"])):
-            a = a + 1
-            n = 1
 
     return graph_settings
 
@@ -233,22 +200,14 @@ def print_Node():
     tam = len(Nodes)
     i = 0
     while(i < tam):
-        print(Nodes[i].idNode, Nodes[i].coordX, Nodes[i].coordY, Nodes[i].visit, Nodes[i].region)
-        i += 1
-
-def print_Set():
-    SetAux = sorted(Sets, key = Set.getDemand, reverse = True)
-    tam = len(SetAux)
-    i = 0
-    while(i < tam):
-        print(SetAux[i].idSet, SetAux[i].demand, SetAux[i].visit, SetAux[i].lixt)
+        print(Nodes[i].idNode, Nodes[i].coordX, Nodes[i].coordY, Nodes[i].visit, Nodes[i].region, Nodes[i].demand)
         i += 1
 
 def print_Vehicles():
     tamV = len(Vehicles)
     i = 0
     while(i < tamV):
-        print(Vehicles[i].Id, Vehicles[i].roteRegion, Vehicles[i].capacity, Vehicles[i].totalDistance)
+        print(Vehicles[i].Id, Vehicles[i].capacity, Vehicles[i].roteNodes, Vehicles[i].totalDistance)
         i += 1
 
 def print_Edges():
@@ -258,95 +217,90 @@ def print_Edges():
         print(Edges[i].edge, Edges[i].distance)
         i += 1
 
-def rote_Region():
-    SetAux = sorted(Sets, key = Set.getDemand, reverse = True)
-    i = 0
-
-    tamV = len(Vehicles)
-    while(i < tamV):
-        # Vehicles[i].roteRegion.append(int(1))
-        for j in SetAux:
-            if(int(Vehicles[i].capacity) < j.demand):
-                break
-            if(j.visit == False):
-                Vehicles[i].roteRegion.append(int(j.idSet))
-                Vehicles[i].capacity -= int(j.demand)
-                j.visit = True
-
-        for j in SetAux:
-            if(int(Vehicles[i].capacity >= j.demand and j.visit == False)):
-                Vehicles[i].roteRegion.append(int(j.idSet))
-                Vehicles[i].capacity -= int(j.demand)
-                j.visit = True
-            if(int(Vehicles[i].capacity == 0)):
-                break
-        # Vehicles[i].roteRegion.append(int(1))
-
-        i += 1
-
-def rote_Node():
-    i = 0
-    tamV = len(Vehicles)
-    while(i < tamV):
-        Vehicles[i].roteNodes.append(int(1))   
-        j = 0
-        tamVR = len(Vehicles[i].roteRegion)
-        while(j < tamVR):
-            k = 0
-            tamS = len(Sets)
-            atualNode = (int(1))
-            while(k < tamS):
-                value = 0
-                if(int(Vehicles[i].roteRegion[j]) == int(Sets[k].idSet)):
-                    achou = False
-                    l = 0
-                    tamSN = len(Sets[k].lixt)
-                    mindistanceAux = 0
-                    while(l < tamSN):
-                        m = 0
-                        tamE = len(Edges)
-                        while(m < tamE):
-                            if(Edges[m].edge == (int(atualNode), int(Sets[k].lixt[l])) and achou == False):
-                                mindistance = float(Edges[m].distance)
-                                mindistanceAux = mindistance
-                                value = int(Sets[k].lixt[l]) 
-                                achou = True
-                            if(Edges[m].edge == (int(atualNode), int(Sets[k].lixt[l])) and mindistance > float(Edges[m].distance)):
-                                mindistance = float(Edges[m].distance)
-                                mindistanceAux = mindistance
-                                value = int(Sets[k].lixt[l])    
-                            m += 1
-                        l += 1
-                    Vehicles[i].totalDistance += float(mindistanceAux)  
-                    Vehicles[i].roteNodes.append(value)
-                indice = len(Vehicles[i].roteNodes) - 1
-                atualNode = int(Vehicles[i].roteNodes[indice])
-                k += 1
-            j += 1
-        Vehicles[i].roteNodes.append(int(1))
-        i += 1
-
-def print_rote_Node():
-    i = 0
-    tamV = len(Vehicles)
-    while(i < tamV):
-        print(Vehicles[i].roteNodes)
-        i += 1
-
 Nodes = []
-Sets = []
 Vehicles = []
 Edges = []
 
-def main():
-    graph_settings = get_graph("./data/problemas-grupo1/problema1.txt")
-    add_Edge(graph_settings)
-    add_Vehicle(graph_settings)
-    rote_Region()
-    rote_Node()
-    print_Vehicles()
-    print_rote_Node()
-    # print_Set()
-    # print_Edges()
+def exist_Region_Not_Visit(c):
+    exist = False
+    i = 0
+    tamN = len(Nodes)
+    while(i < tamN):
+        if(Nodes[i].visit == False and Nodes[i].demand <= Vehicles[c].capacity):
+            exist = True
+        i += 1
+    return exist
 
+def Nearest_Neighbor_Heuristic(graph_settings):
+    e = 0
+    tamE = len(Edges)
+    maxDistance = 0
+    while(e < tamE):
+        if(float(Edges[e].distance) > float(maxDistance)):
+            maxDistance = float(Edges[e].distance)
+        e += 1   
+    menDemand = Nodes[0].demand   
+    tamN = len(Nodes)    
+    a = 0
+    tamV = len(Vehicles)
+    Nodes[0].visit = True
+    while(a < tamV):
+        somDemand = int(0)
+        condAux = []
+        capacity = False
+        vInsert = int(1)
+        vInsertAux = int(1)
+        Vehicles[a].roteNodes.append(int(1))
+        i = 0
+        while(exist_Region_Not_Visit(a) == True and int(somDemand) < int(int(graph_settings["DEMAND_TOTAL"])/int(graph_settings["VEHICLES"]))):
+            vMinDistance = float(maxDistance)
+            j = 0
+            while(j < tamN):
+                if(int(Nodes[vInsertAux-1].idNode) != int(Nodes[j].idNode) and Nodes[j].visit == False and Nodes[j].idNode not in condAux):
+                    if(float(vMinDistance) > calculaDistancia(int(Nodes[vInsertAux-1].coordX), int(Nodes[vInsertAux-1].coordY), int(Nodes[j].coordX), int(Nodes[j].coordY))):
+                        vMinDistance = calculaDistancia(int(Nodes[vInsertAux-1].coordX), int(Nodes[vInsertAux-1].coordY), int(Nodes[j].coordX), int(Nodes[j].coordY))
+                        vInsert = int(Nodes[j].idNode)
+                j += 1
+            
+            if(Nodes[vInsert-1].visit == False and Vehicles[a].capacity >= Nodes[vInsert-1].demand):
+                Vehicles[a].roteNodes.append(Nodes[vInsert-1].idNode)
+                vInsertAux = vInsert
+                Vehicles[a].totalDistance += vMinDistance
+                somDemand += int(Nodes[vInsert-1].demand)
+                r = 0
+                tamR = len(Nodes)
+                while(r < tamR):
+                    if(Nodes[vInsert-1].region == Nodes[r].region):
+                        Nodes[r].visit = True
+                    r += 1
+                vMinDistance = float(maxDistance)
+                Nodes[vInsert-1].visit = True
+                Vehicles[a].capacity -= Nodes[vInsert-1].demand
+            else:
+                condAux.append(Nodes[vInsert-1].idNode)
+        
+        Vehicles[a].roteNodes.append(int(1))
+        a += 1
+    for a in Vehicles:
+        tam = len(a.roteNodes)
+        a.totalDistance += calculaDistancia(int(Nodes[int(a.roteNodes[tam-2])-1].coordX), int(Nodes[int(a.roteNodes[tam-2])-1].coordY), int(Nodes[0].coordX), int(Nodes[0].coordY))
+
+def calcula_distancia_total():
+    distanciaTotal = int(0)
+    for i in Vehicles:
+        distanciaTotal += i.totalDistance
+    
+    return distanciaTotal
+
+def main():
+    graph_settings = get_graph("./data/problemas-grupo1/problema8.txt")
+    add_Vehicle(graph_settings)
+    add_Edge(graph_settings)
+    Nearest_Neighbor_Heuristic(graph_settings)
+    print_Vehicles()
+    print_Node()
+    # print_Edges()
+    print("A distancia total percorrida pelos carros foi de :", calcula_distancia_total())
+
+    
 main()
